@@ -1,16 +1,21 @@
-// Головна: загальний прогрес, статистика і сітка карток ігор.
+// Головна: загальний прогрес, статистика, пошук, фільтр за статусом,
+// сітка карток ігор і архів.
 
 import {
   getState,
   subscribe,
   gameProgress,
+  gameAchievements,
   totalProgress,
   achievementStats,
+  remainingMissables,
+  isComplete,
   moveGame,
   getPref,
   setPref,
+  GAME_STATUSES,
 } from '../store.js';
-import { el, safeUrl, safeColor, readableTextColor, formatDate, plural } from '../utils.js';
+import { el, safeUrl, safeColor, readableTextColor, formatDate, plural, normalizeForSearch } from '../utils.js';
 import { icon, iconButton, progressBar, setPageTitle } from '../ui.js';
 import { loadExampleData } from './settings.js';
 
@@ -20,34 +25,44 @@ const SORTS = {
   progress: 'За прогресом',
 };
 
+const STATUS_FILTERS = { all: 'Усі', ...GAME_STATUSES };
+
 export function renderHome(root) {
   setPageTitle('');
-  const draw = () => drawHome(root);
+  const view = { query: '' };
+  const draw = () => drawHome(root, view);
   draw();
   return subscribe(draw);
 }
 
-function drawHome(root) {
+function drawHome(root, view) {
   const state = getState();
   const sort = SORTS[getPref('homeSort')] ? getPref('homeSort') : 'manual';
+  const statusFilter = STATUS_FILTERS[getPref('homeStatus')] ? getPref('homeStatus') : 'all';
 
   if (!state.games.length) {
     root.replaceChildren(emptyState());
     return;
   }
 
+  // Перемальовування не має збивати фокус і курсор у полі пошуку.
+  const hadSearchFocus = document.activeElement?.id === 'home-search';
+  const caret = hadSearchFocus ? document.activeElement.selectionStart : null;
+
   const total = totalProgress(state);
   const overall = progressBar({ label: 'Загальний прогрес', size: 'lg' });
   overall.set(total);
-  const completed = state.games.filter((g) => {
-    const p = gameProgress(g);
-    return p.total > 0 && p.done === p.total;
-  }).length;
+  const completed = state.games.filter((g) => isComplete(gameProgress(g))).length;
 
   const summary = el(
     'section',
     { class: 'panel overview', 'aria-labelledby': 'overview-title' },
-    el('h1', { class: 'overview__title', id: 'overview-title' }, 'Загальний прогрес'),
+    el(
+      'div',
+      { class: 'overview__head' },
+      el('h1', { class: 'overview__title', id: 'overview-title' }, 'Загальний прогрес'),
+      el('a', { class: 'btn btn--ghost btn--sm', href: '#/stats' }, icon('chart'), 'Статистика'),
+    ),
     overall.element,
     el(
       'p',
@@ -57,6 +72,21 @@ function drawHome(root) {
     statsBlock(state),
   );
 
+  const rerender = () => drawHome(root, view);
+
+  const search = el('input', {
+    class: 'input search__input',
+    type: 'search',
+    id: 'home-search',
+    placeholder: 'Пошук ігор',
+    'aria-label': 'Пошук ігор за назвою або платформою',
+    value: view.query,
+    oninput: (event) => {
+      view.query = event.target.value;
+      rerender();
+    },
+  });
+
   const sortSelect = el(
     'select',
     {
@@ -65,15 +95,36 @@ function drawHome(root) {
       value: sort,
       onchange: (event) => {
         setPref('homeSort', event.target.value);
-        drawHome(root);
+        rerender();
       },
     },
     Object.entries(SORTS).map(([value, label]) => el('option', { value }, label)),
   );
 
+  const statusSelect = el(
+    'select',
+    {
+      class: 'select',
+      id: 'home-status',
+      value: statusFilter,
+      onchange: (event) => {
+        setPref('homeStatus', event.target.value);
+        rerender();
+      },
+    },
+    Object.entries(STATUS_FILTERS).map(([value, label]) => el('option', { value }, label)),
+  );
+
   const toolbar = el(
     'div',
     { class: 'toolbar' },
+    el('div', { class: 'search toolbar__search' }, icon('search', 'icon search__icon'), search),
+    el(
+      'div',
+      { class: 'toolbar__group' },
+      el('label', { class: 'toolbar__label', for: 'home-status' }, 'Статус'),
+      statusSelect,
+    ),
     el(
       'div',
       { class: 'toolbar__group' },
@@ -83,25 +134,68 @@ function drawHome(root) {
     el('a', { class: 'btn btn--primary', href: '#/game/new/edit' }, icon('plus'), 'Додати гру'),
   );
 
-  const games = sortGames(state.games, sort);
-  const grid = el(
-    'ul',
-    { class: 'game-grid', 'aria-label': 'Ігри' },
-    games.map((game, index) =>
-      gameCard(game, {
-        manual: sort === 'manual',
-        index,
-        count: games.length,
-        onMove: (delta, focusKey) => {
-          moveGame(game.id, delta);
-          // Підписка вже перемалювала сітку — повертаємо фокус на ту саму кнопку.
-          root.querySelector(`[data-focus="${focusKey}"]:not(:disabled)`)?.focus();
-        },
-      }),
-    ),
-  );
+  const query = normalizeForSearch(view.query.trim());
+  const matches = (g) =>
+    (statusFilter === 'all' || g.status === statusFilter) &&
+    (!query || normalizeForSearch(`${g.title}\n${g.platform}`).includes(query));
 
-  root.replaceChildren(summary, toolbar, grid);
+  const active = sortGames(state.games.filter((g) => !g.archived), sort);
+  const archived = sortGames(state.games.filter((g) => g.archived), sort);
+  const visible = active.filter(matches);
+  const visibleArchived = archived.filter(matches);
+  // Ручне впорядкування має сенс лише коли видно всі активні ігри.
+  const canReorder = sort === 'manual' && !query && statusFilter === 'all';
+
+  const grid = (games, reorder) =>
+    el(
+      'ul',
+      { class: 'game-grid', 'aria-label': 'Ігри' },
+      games.map((game, index) =>
+        gameCard(game, {
+          manual: reorder,
+          first: index === 0,
+          last: index === games.length - 1,
+          onMove: (delta, focusKey) => {
+            // У state.games ігри з архіву теж є — рухаємо до сусідньої видимої.
+            const ids = state.games.map((g) => g.id);
+            const neighbour = games[index + delta];
+            if (!neighbour) return;
+            const steps = ids.indexOf(neighbour.id) - ids.indexOf(game.id);
+            moveGame(game.id, steps);
+            // Підписка вже перемалювала сітку — повертаємо фокус на ту саму кнопку.
+            root.querySelector(`[data-focus="${focusKey}"]:not(:disabled)`)?.focus();
+          },
+        }),
+      ),
+    );
+
+  const content = [summary, toolbar];
+  if (visible.length) content.push(grid(visible, canReorder));
+  else if (active.length || !archived.length) content.push(el('p', { class: 'muted empty-results' }, 'Нічого не знайдено.'));
+
+  if (visibleArchived.length) {
+    const details = el(
+      'details',
+      {
+        class: 'archive',
+        open: getPref('archiveOpen', false) || Boolean(query),
+        ontoggle: (event) => {
+          if (!query) setPref('archiveOpen', event.target.open);
+        },
+      },
+      el('summary', { class: 'archive__title' }, icon('archive'), `Архів (${visibleArchived.length})`),
+      grid(visibleArchived, false),
+    );
+    content.push(details);
+  }
+
+  root.replaceChildren(...content);
+
+  if (hadSearchFocus) {
+    const input = root.querySelector('#home-search');
+    input.focus();
+    input.setSelectionRange(caret, caret);
+  }
 }
 
 function sortGames(games, sort) {
@@ -115,12 +209,13 @@ function sortGames(games, sort) {
   return list;
 }
 
-function gameCard(game, { manual, index, count, onMove }) {
+function gameCard(game, { manual, first, last, onMove }) {
   const p = gameProgress(game);
   const accent = safeColor(game.accent);
   const bar = progressBar({ label: `Прогрес: ${game.title}`, size: 'sm', showText: false });
   bar.set(p);
-  const complete = p.total > 0 && p.done === p.total;
+  const complete = isComplete(p);
+  const missables = remainingMissables(gameAchievements(game));
 
   const cover = el(
     'div',
@@ -137,17 +232,17 @@ function gameCard(game, { manual, index, count, onMove }) {
     cover.appendChild(img);
   }
 
-  const reorder = manual && count > 1
+  const reorder = manual && !(first && last)
     ? el(
         'div',
         { class: 'game-card__reorder' },
         iconButton('up', `Перемістити «${game.title}» вище`, {
-          disabled: index === 0,
+          disabled: first,
           dataset: { focus: `up-${game.id}` },
           onclick: () => onMove(-1, `up-${game.id}`),
         }),
         iconButton('down', `Перемістити «${game.title}» нижче`, {
-          disabled: index === count - 1,
+          disabled: last,
           dataset: { focus: `down-${game.id}` },
           onclick: () => onMove(1, `down-${game.id}`),
         }),
@@ -162,13 +257,20 @@ function gameCard(game, { manual, index, count, onMove }) {
       'div',
       { class: 'game-card__body' },
       el('h2', { class: 'game-card__title' }, el('a', { class: 'game-card__link', href: `#/game/${game.id}` }, game.title)),
-      game.platform ? el('p', { class: 'game-card__platform' }, game.platform) : null,
+      el(
+        'p',
+        { class: 'game-card__platform' },
+        [game.platform, game.status !== 'playing' ? GAME_STATUSES[game.status] : ''].filter(Boolean).join(' · ') || ' ',
+      ),
       bar.element,
       el(
         'div',
         { class: 'game-card__footer' },
         el('span', { class: 'game-card__count' }, `${p.done} / ${p.total}`),
         complete ? el('span', { class: 'badge badge--success' }, icon('trophy'), '100%') : null,
+        !complete && missables
+          ? el('span', { class: 'badge badge--warning', title: 'Пропускні досягнення, які ще не отримано' }, `${missables} ${plural(missables, ['пропускне', 'пропускні', 'пропускних'])}`)
+          : null,
       ),
     ),
     reorder,

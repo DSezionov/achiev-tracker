@@ -25,6 +25,14 @@ const ICONS = {
   upload: 'M12 21V9M7 14l5-5 5 5M5 3h14',
   sync: 'M21 12a9 9 0 0 1-15.5 6.2M3 12A9 9 0 0 1 18.5 5.8M18 2v4h-4M6 22v-4h4',
   close: 'M6 6l12 12M18 6L6 18',
+  star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z',
+  note: 'M5 4h14v12l-4 4H5zM15 20v-4h4M8 9h8M8 13h5',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  minus: 'M5 12h14',
+  flag: 'M5 21V4M5 4h11l-2 4 2 4H5',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  share: 'M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 3v12M7 8l5-5 5 5',
+  archive: 'M3 4h18v4H3zM5 8v12h14V8M10 12h4',
   check: 'M5 12.5l4.5 4.5L19 7',
 };
 
@@ -95,7 +103,7 @@ export function progressBar({ label, size = 'md', showText = true } = {}) {
  * actions: [{ value, label, variant: 'primary' | 'danger' | 'ghost' }]
  * requireText: рядок, який треба ввести для підтвердження небезпечної дії.
  */
-export function openDialog({ title, message, content, actions, requireText }) {
+export function openDialog({ title, message, content, actions, requireText, initialFocus }) {
   return new Promise((resolve) => {
     const confirmInput = requireText
       ? el('input', {
@@ -170,7 +178,7 @@ export function openDialog({ title, message, content, actions, requireText }) {
 
     document.body.appendChild(dialog);
     dialog.showModal();
-    (confirmInput || buttons.find((b) => !b.disabled && b.dataset.value !== 'true') || buttons[0]).focus();
+    (initialFocus || confirmInput || buttons.find((b) => !b.disabled && b.dataset.value !== 'true') || buttons[0]).focus();
   });
 }
 
@@ -197,16 +205,98 @@ export async function confirmDialog({
 
 // ---------- Сповіщення ----------
 
-/** Коротке сповіщення внизу екрана. type: 'info' | 'success' | 'error' */
-export function toast(message, { type = 'info', duration = 3500 } = {}) {
+/**
+ * Коротке сповіщення внизу екрана. type: 'info' | 'success' | 'error' | 'warning'.
+ * action: { label, onClick } — кнопка в сповіщенні (наприклад, «Скасувати»).
+ */
+export function toast(message, { type = 'info', duration = 3500, action } = {}) {
   const region = document.getElementById('toasts');
   if (!region) return;
-  const item = el('div', { class: `toast toast--${type}`, role: type === 'error' ? 'alert' : 'status' }, message);
-  region.appendChild(item);
-  setTimeout(() => {
+  let timer;
+  const dismiss = () => {
+    clearTimeout(timer);
     item.classList.add('is-leaving');
     setTimeout(() => item.remove(), 300);
-  }, duration);
+  };
+  const item = el(
+    'div',
+    { class: `toast toast--${type}`, role: type === 'error' ? 'alert' : 'status' },
+    el('span', { class: 'toast__text' }, message),
+    action
+      ? el(
+          'button',
+          {
+            type: 'button',
+            class: 'toast__action',
+            onclick: () => {
+              dismiss();
+              action.onClick();
+            },
+          },
+          action.label,
+        )
+      : null,
+  );
+  // Не більше чотирьох сповіщень одночасно.
+  while (region.children.length >= 4) region.firstElementChild.remove();
+  region.appendChild(item);
+  timer = setTimeout(dismiss, action ? Math.max(duration, 5000) : duration);
+}
+
+/** Коротка вібрація (Android). Ігнорується, якщо не підтримується або вимкнено анімації. */
+export function vibrate(pattern = 12) {
+  // Браузер дозволяє вібрацію лише після взаємодії користувача зі сторінкою.
+  if (prefersReducedMotion() || navigator.userActivation?.hasBeenActive === false) return;
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {
+    /* не підтримується */
+  }
+}
+
+export function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/** Святкове конфеті кольору акценту (при 100%). */
+export function celebrate(color) {
+  if (prefersReducedMotion()) return;
+  const layer = el('div', { class: 'confetti', 'aria-hidden': 'true' });
+  const colors = [color, '#ffd166', '#ffffff', color];
+  for (let i = 0; i < 48; i += 1) {
+    const piece = el('span', {
+      class: 'confetti__piece',
+      style: {
+        left: `${Math.random() * 100}%`,
+        background: colors[i % colors.length],
+        '--x': `${(Math.random() - 0.5) * 240}px`,
+        '--r': `${Math.random() * 720 - 360}deg`,
+        'animation-delay': `${Math.random() * 300}ms`,
+        'animation-duration': `${1600 + Math.random() * 1200}ms`,
+      },
+    });
+    layer.appendChild(piece);
+  }
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 3500);
+}
+
+/** Діалог з текстовим полем. Повертає введений текст або null. */
+export async function promptDialog({ title, message, value = '', label, multiline = false, confirmLabel = 'Зберегти' }) {
+  const input = multiline
+    ? el('textarea', { class: 'input textarea', rows: '4', value, 'aria-label': label || title })
+    : el('input', { class: 'input', type: 'text', value, 'aria-label': label || title });
+  const result = await openDialog({
+    title,
+    message,
+    content: input,
+    initialFocus: input,
+    actions: [
+      { value: 'cancel', label: 'Скасувати', variant: 'ghost' },
+      { value: 'ok', label: confirmLabel, variant: 'primary' },
+    ],
+  });
+  return result === 'ok' ? input.value : null;
 }
 
 /** Заголовок сторінки і фокус для скрінрідерів після переходу. */

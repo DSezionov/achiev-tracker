@@ -147,9 +147,16 @@ export function downloadFile(filename, text, type = 'application/json') {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Пошук без урахування регістру. */
+/**
+ * Текст для пошуку: без урахування регістру й розділових знаків,
+ * щоб «stalker» знаходив «S.T.A.L.K.E.R.», а «марти» — «Марти».
+ */
 export function normalizeForSearch(text) {
-  return String(text ?? '').toLocaleLowerCase('uk-UA');
+  return String(text ?? '')
+    .toLocaleLowerCase('uk-UA')
+    .replace(/[^\p{L}\p{N}\s]+/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Відмінювання: plural(5, ['досягнення', 'досягнення', 'досягнень']). */
@@ -159,4 +166,13 @@ export function plural(n, [one, few, many]) {
   if (mod10 === 1 && mod100 !== 11) return one;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
   return many;
+}
+
+/**
+ * Посилання на гру в Steam (магазин або спільнота) → URL обкладинки з Steam CDN.
+ * Порожній рядок, якщо це не посилання на гру в Steam.
+ */
+export function steamCoverUrl(url) {
+  const match = String(url || '').match(/(?:store\.steampowered\.com|steamcommunity\.com)\/(?:[^?#]*?\/)?(?:app|stats)\/(\d+)/i);
+  return match ? `https://cdn.cloudflare.steamstatic.com/steam/apps/${match[1]}/header.jpg` : '';
 }

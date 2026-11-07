@@ -1,9 +1,9 @@
 // Синхронізація з секретним GitHub Gist.
 // localStorage лишається джерелом правди: помилки мережі лише змінюють статус.
-// Конфлікти вирішуються за updatedAt (перемагає новіший), версія, що програла,
-// зберігається в резервну копію.
+// Локальні дані й дані з Gist об'єднуються (mergeStates): зміни з обох
+// пристроїв зберігаються на рівні окремих досягнень.
 
-import { getState, subscribe, replaceState, saveBackup, migrate } from './store.js';
+import { getState, subscribe, replaceState, saveBackup, migrate, mergeStates, sameContent } from './store.js';
 import { debounce } from './utils.js';
 
 const CONFIG_KEY = 'achievement-tracker:gist';
@@ -45,11 +45,6 @@ function saveConfig(config) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 }
 
-function patchConfig(patch) {
-  const config = getConfig();
-  if (config) saveConfig({ ...config, ...patch });
-}
-
 // ---------- Статус ----------
 
 export function getStatus() {
@@ -77,11 +72,12 @@ export class SyncError extends Error {
   }
 }
 
-async function request(path, token, { method = 'GET', body } = {}) {
+async function request(path, token, { method = 'GET', body, keepalive = false } = {}) {
   let response;
   try {
     response = await fetch(`${API}${path}`, {
       method,
+      keepalive,
       cache: 'no-store',
       headers: {
         Accept: 'application/vnd.github+json',
@@ -142,10 +138,16 @@ async function fetchGist(config) {
   return { gist, remote: await readGistState(gist) };
 }
 
-async function pushGist(config, state) {
+/** keepalive дозволяє запиту завершитися, навіть якщо сторінку закривають (до 64 КБ). */
+const KEEPALIVE_LIMIT = 60 * 1024;
+
+async function pushGist(config, state, { keepalive = false } = {}) {
+  const content = keepalive ? JSON.stringify(state) : serialize(state);
+  const body = { files: { [FILE_NAME]: { content } } };
   await request(`/gists/${encodeURIComponent(config.gistId)}`, config.token, {
     method: 'PATCH',
-    body: { files: { [FILE_NAME]: { content: serialize(state) } } },
+    body,
+    keepalive: keepalive && JSON.stringify(body).length < KEEPALIVE_LIMIT,
   });
 }
 
@@ -190,7 +192,7 @@ export async function connect({ token, gistId }) {
 
   if (!gist) {
     const created = await createGist(token, getState());
-    saveConfig({ token, gistId: created.id, htmlUrl: created.html_url, lastSynced: getState().updatedAt });
+    saveConfig({ token, gistId: created.id, htmlUrl: created.html_url });
     setStatus('ok');
     return { created: true, pending: null, remote: null };
   }
@@ -199,16 +201,22 @@ export async function connect({ token, gistId }) {
   return { created: false, pending: { token, gistId: gist.id, htmlUrl: gist.html_url }, remote };
 }
 
-/** Завершує підключення: 'pull' — взяти дані з Gist, 'push' — відправити локальні. */
+/**
+ * Завершує підключення до наявного Gist:
+ *   'merge' — об'єднати локальні дані з даними з Gist;
+ *   'pull'  — замінити локальні даними з Gist (локальні — в резервну копію);
+ *   'push'  — замінити дані в Gist локальними.
+ */
 export async function resolveInitial(direction, pending, remote) {
-  saveConfig({ ...pending, lastSynced: null });
+  saveConfig(pending);
   setStatus('syncing');
   try {
     if (direction === 'pull' && remote) {
       applyRemote(remote, 'Перед завантаженням даних з Gist');
-    } else {
+    } else if (direction === 'push' || !remote) {
       await pushGist(getConfig(), getState());
-      patchConfig({ lastSynced: getState().updatedAt });
+    } else {
+      await reconcile(getConfig(), remote);
     }
     setStatus('ok');
   } catch (error) {
@@ -225,15 +233,12 @@ export function disconnect() {
 
 // ---------- Синхронізація ----------
 
-const time = (iso) => (iso ? Date.parse(iso) || 0 : 0);
-
 function applyRemote(remote, reason) {
   if (getState().games.length) saveBackup(getState(), reason);
   replaceState(remote, { source: 'remote', keepUpdatedAt: true });
-  patchConfig({ lastSynced: remote.updatedAt });
 }
 
-/** Звіряє локальні дані з Gist і переносить новіші в інший бік. */
+/** Звіряє локальні дані з Gist і переносить зміни в обидва боки. */
 export function syncNow() {
   if (!getConfig()) return Promise.resolve();
   if (running) {
@@ -251,6 +256,22 @@ export function syncNow() {
   return running;
 }
 
+/** Об'єднує локальний стан з remote: оновлює локальні дані і/або Gist, якщо треба. */
+async function reconcile(config, remote) {
+  const local = getState();
+  if (!remote) {
+    await pushGist(config, local);
+    return;
+  }
+  const merged = mergeStates(local, remote);
+  if (!sameContent(merged, local)) {
+    applyRemote(merged, 'Перед об’єднанням із даними з Gist');
+  }
+  if (!sameContent(merged, remote)) {
+    await pushGist(config, getState());
+  }
+}
+
 async function syncOnce() {
   const config = getConfig();
   if (!config) return;
@@ -262,40 +283,30 @@ async function syncOnce() {
   lastCheck = Date.now();
   try {
     const { remote } = await fetchGist(config);
-    const local = getState();
-    const localTime = time(local.updatedAt);
-    const remoteTime = time(remote?.updatedAt);
-    const synced = config.lastSynced || null;
-
-    if (!remote || localTime > remoteTime) {
-      if (remote && synced && remote.updatedAt !== synced) {
-        // Gist змінився з іншого пристрою після останньої синхронізації,
-        // але локальні дані новіші. Зберігаємо версію з Gist, щоб її можна було відновити.
-        saveBackup(remote, 'Конфлікт синхронізації: версія з Gist');
-        notifyConflict();
-      }
-      await pushGist(config, local);
-      patchConfig({ lastSynced: local.updatedAt });
-    } else if (remoteTime > localTime) {
-      const localChanged = synced && local.updatedAt !== synced;
-      applyRemote(remote, localChanged ? 'Конфлікт синхронізації: локальна версія' : 'Перед оновленням з Gist');
-      if (localChanged) notifyConflict();
-    } else {
-      patchConfig({ lastSynced: local.updatedAt });
-    }
+    await reconcile(config, remote);
     setStatus('ok');
   } catch (error) {
     fail(error);
   }
 }
 
+/**
+ * Сторінку ховають (заблокували телефон, перемкнули вкладку): відправляємо
+ * локальні зміни одразу, не чекаючи debounce. Без попереднього читання Gist —
+ * інший пристрій усе одно об'єднає свої зміни під час наступної синхронізації.
+ */
+function pushBeforeHide() {
+  const config = getConfig();
+  if (!config || !schedulePush.pending()) return;
+  schedulePush.cancel();
+  pushGist(config, getState(), { keepalive: true }).catch(() => {
+    /* не встигли — відправимо під час наступного відкриття */
+  });
+}
+
 function fail(error) {
   if (error instanceof SyncError && error.offline) setStatus('offline', error.message);
   else setStatus('error', error.message || 'Невідома помилка');
-}
-
-function notifyConflict() {
-  window.dispatchEvent(new CustomEvent('sync-conflict'));
 }
 
 const schedulePush = debounce(() => syncNow(), PUSH_DELAY);
@@ -324,14 +335,16 @@ export function startSync() {
     if (schedulePush.pending()) return;
     syncNow();
   };
-  document.addEventListener('visibilitychange', checkIfStale);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') pushBeforeHide();
+    else checkIfStale();
+  });
   window.addEventListener('focus', checkIfStale);
   setInterval(() => {
     if (Date.now() - lastCheck >= POLL_INTERVAL) checkIfStale();
   }, POLL_INTERVAL);
 
-  // Незбережені зміни — відправити до закриття сторінки (наскільки встигне).
-  window.addEventListener('pagehide', () => schedulePush.flush());
+  window.addEventListener('pagehide', pushBeforeHide);
 
   if (getConfig()) syncNow();
 }

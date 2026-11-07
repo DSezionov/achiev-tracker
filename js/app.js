@@ -7,12 +7,14 @@ import { renderHome } from './views/home.js';
 import { renderGame } from './views/game.js';
 import { renderEditor } from './views/editor.js';
 import { renderSettings } from './views/settings.js';
+import { renderStats } from './views/stats.js';
 
 const ROUTES = [
   { pattern: /^\/$/, view: renderHome },
   { pattern: /^\/game\/([\w-]+)\/edit$/, view: renderEditor, params: ['id'] },
   { pattern: /^\/game\/([\w-]+)$/, view: renderGame, params: ['id'] },
   { pattern: /^\/settings$/, view: renderSettings },
+  { pattern: /^\/stats$/, view: renderStats },
 ];
 
 const root = document.getElementById('app');
@@ -116,12 +118,6 @@ subscribe(({ source }) => {
   if (source === 'storage-error') {
     toast('Не вдалося зберегти дані: сховище браузера переповнене або недоступне', { type: 'error', duration: 8000 });
   }
-});
-window.addEventListener('sync-conflict', () => {
-  toast('Дані змінювались на двох пристроях. Залишено новішу версію, іншу збережено в резервну копію (Налаштування).', {
-    type: 'error',
-    duration: 9000,
-  });
 });
 
 window.addEventListener('hashchange', route);

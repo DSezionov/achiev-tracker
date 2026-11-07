@@ -73,9 +73,16 @@ export function renderSettings(root) {
 
   const offData = subscribe(drawData);
   const offStatus = onStatusChange(() => updateSyncStatus(syncHost));
+  // Тему могли перемкнути кнопкою в шапці — оновлюємо перемикач тут.
+  const onTheme = () => {
+    const radio = root.querySelector(`input[name="theme"][value="${getTheme()}"]`);
+    if (radio) radio.checked = true;
+  };
+  window.addEventListener('themechange', onTheme);
   return () => {
     offData();
     offStatus();
+    window.removeEventListener('themechange', onTheme);
   };
 }
 
@@ -401,29 +408,32 @@ function syncPanel(redraw) {
 async function chooseInitialDirection(pending, remote) {
   const local = getState();
   const remoteGames = remote?.games.length || 0;
-  if (!remoteGames) {
-    await resolveInitial('push', pending, remote);
-    toast('Gist підключено, локальні дані відправлено', { type: 'success' });
-    return;
-  }
-  if (!local.games.length) {
-    await resolveInitial('pull', pending, remote);
-    toast('Дані завантажено з Gist', { type: 'success' });
+  if (!remoteGames || !local.games.length) {
+    await resolveInitial('merge', pending, remote);
+    toast(remoteGames ? 'Дані завантажено з Gist' : 'Gist підключено, локальні дані відправлено', { type: 'success' });
     return;
   }
   const choice = await openDialog({
-    title: 'Чиї дані залишити?',
+    title: 'Дані є і тут, і в Gist',
     message:
-      `У Gist є ${remoteGames} ${plural(remoteGames, ['гра', 'гри', 'ігор'])}, а в цьому браузері — ${local.games.length}. ` +
-      'Оберіть, яку версію вважати основною. Інша буде збережена в резервну копію (якщо це локальні дані).',
+      `У Gist ${remoteGames} ${plural(remoteGames, ['гра', 'гри', 'ігор'])}, у цьому браузері — ${local.games.length}. ` +
+      '«Об’єднати» збереже ігри й відмітки з обох боків. «Взяти з Gist» замінить локальні дані (вони підуть у резервну копію). ' +
+      '«Відправити локальні» замінить дані в Gist.',
     actions: [
       { value: 'push', label: 'Відправити локальні', variant: 'ghost' },
-      { value: 'pull', label: 'Взяти з Gist', variant: 'primary' },
+      { value: 'pull', label: 'Взяти з Gist', variant: 'ghost' },
+      { value: 'merge', label: 'Об’єднати', variant: 'primary' },
     ],
   });
-  // Закрили діалог — безпечніший варіант: нічого не перезаписувати в Gist, взяти звідти з бекапом.
-  await resolveInitial(choice === 'push' ? 'push' : 'pull', pending, remote);
-  toast(choice === 'push' ? 'Локальні дані відправлено в Gist' : 'Дані завантажено з Gist', { type: 'success' });
+  // Закрили діалог — найбезпечніше об'єднати: нічого не втрачається.
+  const direction = choice || 'merge';
+  await resolveInitial(direction, pending, remote);
+  const messages = {
+    merge: 'Дані об’єднано',
+    pull: 'Дані завантажено з Gist',
+    push: 'Локальні дані відправлено в Gist',
+  };
+  toast(messages[direction], { type: 'success' });
 }
 
 function syncStatusContent(status, error) {

@@ -1401,6 +1401,592 @@ code {
   }
 }
 
+/* ---------- Рядок досягнення: дії, лічильник, спойлер, нотатка ---------- */
+
+.ach__actions {
+  display: flex;
+  flex-direction: column;
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) calc(-1 * var(--space-2)) 0;
+}
+
+.ach__actions .btn--icon {
+  color: var(--color-text-muted);
+}
+
+.ach__star.is-active {
+  color: var(--color-warning);
+}
+
+.ach__star.is-active .icon {
+  fill: currentColor;
+}
+
+.ach__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid var(--accent, var(--color-primary));
+  background: var(--color-surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ach__note .icon {
+  width: 1em;
+  height: 1em;
+  margin-top: 0.2em;
+  color: var(--color-text-muted);
+}
+
+.spoiler-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-self: start;
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.spoiler-btn:hover {
+  color: var(--color-text);
+}
+
+.counter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 360px;
+}
+
+.counter__btn {
+  flex: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.counter__main {
+  flex: 1;
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.counter__value {
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.counter__value:hover {
+  background: var(--color-surface-2);
+}
+
+.counter__bar {
+  position: relative;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-3);
+  overflow: hidden;
+}
+
+.counter__fill {
+  position: absolute;
+  inset: 0;
+  width: var(--progress, 0%);
+  background: var(--accent, var(--color-primary));
+  border-radius: inherit;
+  transition: width var(--duration) var(--easing);
+}
+
+.ach.is-leaving {
+  opacity: 0.4;
+  transition: opacity var(--duration-slow);
+}
+
+.ach--focus {
+  border-left-color: var(--color-warning);
+}
+
+.focus-panel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 40%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-warning) 6%, var(--color-surface));
+}
+
+.focus-panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-md);
+}
+
+.focus-panel__title .icon {
+  color: var(--color-warning);
+  fill: currentColor;
+}
+
+.game-summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.checkpoint-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.checkpoint-badge .icon {
+  width: 1em;
+  height: 1em;
+  color: var(--color-warning);
+}
+
+.checkpoint-warning {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.section-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.check-field--sm {
+  min-height: 36px;
+  font-size: var(--font-size-sm);
+}
+
+/* ---------- Редактор: нові елементи ---------- */
+
+.select--full {
+  width: 100%;
+}
+
+.input--narrow {
+  max-width: 160px;
+}
+
+.check-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-5);
+}
+
+.cover-preview img {
+  margin-top: var(--space-2);
+  max-height: 120px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.ach-editor__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ach-editor__index {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.import-preview__sample {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
+  color: var(--color-text-muted);
+}
+
+.bulk-bar {
+  position: sticky;
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+}
+
+.bulk-bar__count {
+  font-weight: 700;
+  margin-right: auto;
+}
+
+/* ---------- Головна: пошук, архів ---------- */
+
+.overview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.toolbar__search {
+  flex: 1 1 100%;
+}
+
+.archive {
+  margin-top: var(--space-5);
+}
+
+.archive__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  margin-bottom: var(--space-3);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+/* ---------- Статистика ---------- */
+
+.stats-page {
+  max-width: var(--narrow-width);
+  margin: 0 auto;
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Широкі таблиця й календар прокручуються всередині панелі, а не сторінка. */
+.stats-page > *,
+.editor > *,
+.game-page > * {
+  min-width: 0;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.tile {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.tile__label {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.tile__value {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.tile__note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.heatmap {
+  /* На вузькому екрані клітинки зменшуються, щоб уміщалось пів року. */
+  --cell: clamp(8px, calc((100vw - 100px) / 26 - 2px), 11px);
+  --gap: 2px;
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.heatmap__months {
+  display: grid;
+  grid-template-columns: repeat(26, var(--cell));
+  gap: var(--gap);
+  margin-left: calc(2ch + var(--space-2));
+  height: 1.4em;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.heatmap__month {
+  white-space: nowrap;
+}
+
+.heatmap__body {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.heatmap__weekdays {
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  gap: var(--gap);
+  width: 2ch;
+  font-size: 9px;
+  line-height: var(--cell);
+  color: var(--color-text-muted);
+}
+
+.heatmap__grid {
+  display: grid;
+  grid-template-rows: repeat(7, var(--cell));
+  grid-auto-flow: column;
+  grid-auto-columns: var(--cell);
+  gap: var(--gap);
+}
+
+.heatmap__cell {
+  display: inline-block;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 2px;
+  background: var(--color-surface-3);
+}
+
+.heatmap__cell--future {
+  background: transparent;
+}
+
+/* Послідовна шкала одного кольору: від фону до акценту. */
+.heatmap__cell--l1 {
+  background: color-mix(in srgb, var(--color-primary) 32%, var(--color-surface));
+}
+
+.heatmap__cell--l2 {
+  background: color-mix(in srgb, var(--color-primary) 56%, var(--color-surface));
+}
+
+.heatmap__cell--l3 {
+  background: color-mix(in srgb, var(--color-primary) 78%, var(--color-surface));
+}
+
+.heatmap__cell--l4 {
+  background: var(--color-primary);
+}
+
+.heatmap__legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  margin-top: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.heatmap__legend .heatmap__cell {
+  --cell: 11px;
+}
+
+.bars {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.bars__plot {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  align-items: end;
+  gap: 2px;
+  height: 160px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bars__column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  height: 100%;
+  padding: 0 15%;
+  border-radius: var(--radius-sm);
+  cursor: default;
+}
+
+.bars__column:hover,
+.bars__column:focus-visible {
+  background: var(--color-surface-2);
+}
+
+.bars__bar {
+  min-height: 0;
+  background: var(--color-primary);
+  border-radius: 4px 4px 0 0;
+}
+
+.bars__value {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.bars__axis {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 40;
+  max-width: 260px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+
+.table-view {
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.table-view > summary {
+  cursor: pointer;
+  color: var(--color-primary);
+  font-weight: 600;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.data-table th,
+.data-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.data-table td:first-child {
+  white-space: normal;
+  min-width: 140px;
+}
+
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Сповіщення: дія і конфеті ---------- */
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.toast__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.toast__action {
+  flex: none;
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toast--warning {
+  border-left: 4px solid var(--color-warning);
+}
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.confetti__piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translate(var(--x), 105vh) rotate(var(--r));
+    opacity: 0.6;
+  }
+}
+
 /* ---------- Ширші екрани ---------- */
 
 @media (min-width: 640px) {
@@ -1444,6 +2030,31 @@ code {
 
   .stats__item--wide {
     grid-column: auto;
+  }
+
+  .tiles {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .toolbar__search {
+    flex: 1 1 220px;
+  }
+
+  .heatmap {
+    --cell: 16px;
+    --gap: 3px;
+  }
+}
+
+@media (max-width: 639px) {
+  /* На телефоні календар без підписів днів тижня — інакше не вміщається пів року. */
+  .heatmap__weekdays {
+    display: none;
+  }
+
+  .heatmap__months {
+    margin-left: 0;
+    font-size: 9px;
   }
 }
 
