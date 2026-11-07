@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-07T20:00:00.000Z",
+  "games": [
+    {
+      "id": "g_ex0001",
+      "title": "S.T.A.L.K.E.R. 2: Heart of Chornobyl",
+      "platform": "Steam",
+      "accent": "#c8a24a",
+      "coverUrl": "",
+      "guideUrl": "https://steamcommunity.com/app/1643320/guides/",
+      "notes": "Приклад гри з кількома розділами.",
+      "createdAt": "2026-11-07T20:00:00.000Z",
+      "sections": [
+        {
+          "id": "s_ex0001",
+          "title": "Сюжет",
+          "achievements": [
+            {
+              "id": "a_ex0001",
+              "name": "Новий старий друг",
+              "condition": "Пройти Кордон і поговорити з Сидоровичем.",
+              "tip": "",
+              "missable": false,
+              "done": true,
+              "doneAt": "2026-11-05T18:30:00.000Z"
+            },
+            {
+              "id": "a_ex0002",
+              "name": "Посмішка Марти",
+              "condition": "Врятувати напарника-долгівця.",
+              "tip": "Петра вбивай лише після нагороди.",
+              "missable": true,
+              "done": false,
+              "doneAt": null
+            },
+            {
+              "id": "a_ex0003",
+              "name": "Серце Зони",
+              "condition": "Дійти до однієї з фінальних сцен.",
+              "tip": "Зробіть окреме збереження перед останнім вибором — так можна відкрити всі фінали за одне проходження.",
+              "missable": false,
+              "done": false,
+              "doneAt": null
+            }
+          ]
+        },
+        {
+          "id": "s_ex0002",
+          "title": "Колекціонування",
+          "achievements": [
+            {
+              "id": "a_ex0004",
+              "name": "Сталкерстрайк",
+              "condition": "Убити 50 сталкерів хедшотами.",
+              "tip": "",
+              "missable": false,
+              "done": false,
+              "doneAt": null
+            },
+            {
+              "id": "a_ex0005",
+              "name": "Збирач артефактів",
+              "condition": "Знайти 10 різних артефактів.",
+              "tip": "Детектор «Ведмідь» показує артефакти на більшій відстані.",
+              "missable": false,
+              "done": true,
+              "doneAt": "2026-11-06T21:10:00.000Z"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "g_ex0002",
+      "title": "Тестова гра",
+      "platform": "PlayStation",
+      "accent": "#4fb39a",
+      "coverUrl": "",
+      "guideUrl": "",
+      "notes": "",
+      "createdAt": "2026-11-07T20:00:00.000Z",
+      "sections": [
+        {
+          "id": "s_ex0003",
+          "title": "Загальне",
+          "achievements": [
+            {
+              "id": "a_ex0006",
+              "name": "Перші кроки",
+              "condition": "Завершити навчання.",
+              "tip": "",
+              "missable": false,
+              "done": true,
+              "doneAt": "2026-11-01T10:00:00.000Z"
+            },
+            {
+              "id": "a_ex0007",
+              "name": "Без жодної подряпини",
+              "condition": "Пройти перший рівень, не отримавши шкоди.",
+              "tip": "Простіше на легкій складності — досягнення від неї не залежить.",
+              "missable": false,
+              "done": false,
+              "doneAt": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

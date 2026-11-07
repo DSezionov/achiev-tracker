@@ -1,0 +1,100 @@
+/* Дизайн-токени. Щоб перефарбувати застосунок, достатньо змінити значення тут. */
+
+:root {
+  /* Шрифти */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  --line-height: 1.5;
+
+  /* Відступи */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Радіуси */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Розміри */
+  --touch-target: 44px;
+  --content-width: 1120px;
+  --narrow-width: 760px;
+  --checkbox-size: 28px;
+  --header-height: 56px;
+
+  /* Анімації */
+  --duration-fast: 120ms;
+  --duration: 220ms;
+  --duration-slow: 600ms;
+  --easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Темна тема (за замовчуванням) */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0f1115;
+  --color-surface: #171a21;
+  --color-surface-2: #1f232c;
+  --color-surface-3: #2a2f3a;
+  --color-border: #2f3542;
+  --color-text: #e8eaf0;
+  --color-text-muted: #a3a9b7;
+  --color-primary: #7c9cff;
+  --color-primary-hover: #95afff;
+  --color-primary-contrast: #0b0d12;
+  --color-success: #4ade80;
+  --color-success-bg: rgba(74, 222, 128, 0.14);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.14);
+  --color-danger: #f87171;
+  --color-danger-bg: rgba(248, 113, 113, 0.12);
+  --color-focus: #9db4ff;
+  --color-overlay: rgba(5, 6, 10, 0.7);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #f6f7fb;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef0f5;
+  --color-surface-3: #e2e5ed;
+  --color-border: #d6dae3;
+  --color-text: #161a22;
+  --color-text-muted: #535b6b;
+  --color-primary: #3553d6;
+  --color-primary-hover: #2a45bb;
+  --color-primary-contrast: #ffffff;
+  --color-success: #15803d;
+  --color-success-bg: rgba(21, 128, 61, 0.12);
+  --color-warning: #a14d07;
+  --color-warning-bg: rgba(217, 119, 6, 0.14);
+  --color-danger: #c62828;
+  --color-danger-bg: rgba(198, 40, 40, 0.08);
+  --color-focus: #3553d6;
+  --color-overlay: rgba(20, 24, 33, 0.45);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.08);
+  --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+    --duration-slow: 0ms;
+  }
+}
